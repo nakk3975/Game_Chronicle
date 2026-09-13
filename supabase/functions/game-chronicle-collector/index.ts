@@ -39,14 +39,14 @@ async function persist(job:any,globalToken:string,o:Observation,delay:number){
   const result=apply(row.payload,o);
   for(const p of result.changed){
    await db`insert into chronicle.play_session(id,user_id,game_id,name,started_at,ended_at,lifecycle,quality,tracked_seconds,payload)
-    values(${p.id}::uuid,${job.user_id}::uuid,${p.gameId},${p.name},${p.startedAt}::timestamptz,${p.endedAt}::timestamptz,${p.lifecycle},${p.quality},${seconds(p)},${JSON.stringify(p)}::jsonb)
+    values(${p.id}::uuid,${job.user_id}::uuid,${p.gameId},${p.name},${p.startedAt}::timestamptz,${p.endedAt}::timestamptz,${p.lifecycle},${p.quality},${seconds(p)},${db.json(p)}::jsonb)
     on conflict(id) do update set ended_at=excluded.ended_at,lifecycle=excluded.lifecycle,quality=excluded.quality,tracked_seconds=excluded.tracked_seconds,payload=excluded.payload,version=chronicle.play_session.version+1`;
    await db`delete from chronicle.play_segment where session_id=${p.id}::uuid`;
    await db`insert into chronicle.play_segment(session_id,segment_index,start_at,end_at)
-    select ${p.id}::uuid,(ordinality-1)::int,(value->>'start')::timestamptz,(value->>'end')::timestamptz from jsonb_array_elements(${JSON.stringify(p.segments)}::jsonb) with ordinality`;
+    select ${p.id}::uuid,(ordinality-1)::int,(value->>'start')::timestamptz,(value->>'end')::timestamptz from jsonb_array_elements(${db.json(p.segments)}::jsonb) with ordinality`;
   }
   for(const gap of result.gaps)await db`insert into chronicle.tracking_gap(user_id,start_at,end_at,reason) values(${job.user_id}::uuid,${gap.start}::timestamptz,${gap.end}::timestamptz,${gap.reason})`;
-  await db`update chronicle.tracking_state set payload=${JSON.stringify(result.state)}::jsonb,lease_until=null,next_poll_at=case when ${delay}::int<=60 then date_trunc('minute',now())+interval '1 minute' else now()+${delay}*interval '1 second' end where user_id=${job.user_id}::uuid and fencing_token=${job.fencing_token}::bigint`;
+  await db`update chronicle.tracking_state set payload=${db.json(result.state)}::jsonb,lease_until=null,next_poll_at=case when ${delay}::int<=60 then date_trunc('minute',now())+interval '1 minute' else now()+${delay}*interval '1 second' end where user_id=${job.user_id}::uuid and fencing_token=${job.fencing_token}::bigint`;
   return true;
  });
 }
@@ -83,7 +83,7 @@ async function sync(token:string){
   const c=await db`select id from chronicle.collector_control where id and engine='edge' and sync_token=${token}::bigint and sync_lease_until>now() for share`;if(!c.length)return false;
   const [user]=await db`select tracking_enabled,status,version from chronicle.app_user where id=${u.id}::uuid for update`;
   if(!user?.tracking_enabled||user.status!=='ACTIVE'||String(user.version)!==String(u.version))return false;
-  if(games.length){const data=JSON.stringify(games);
+  if(games.length){const data=db.json(games);
    await db`insert into chronicle.playtime_checkpoint(user_id,game_id,reported_minutes)
     select ${u.id}::uuid,x.game_id,x.minutes from jsonb_to_recordset(${data}::jsonb) x(game_id text,name text,minutes bigint)
     left join chronicle.user_game g on g.user_id=${u.id}::uuid and g.game_id=x.game_id where g.game_id is null or g.reported_minutes<>x.minutes`;

@@ -4,7 +4,7 @@
 
 ## 통과
 
-- Java 17 / Gradle 8.14.3: 백엔드 컴파일, 단위·MVC 테스트 32개, bootJar 생성.
+- Java 17 / Gradle 8.14.3: 백엔드 컴파일, 단위·MVC 테스트 33개, bootJar 생성.
 - React TypeScript 타입 검사와 Vite production build.
 - 상태 전이 9개: 시작·종료 중간값, 첫 종료 후보 경계, 게임 전환, 3회 실패, 실패 후 같은 게임, 무게임 복귀 공백, 재시작, 오래된 응답 폐기, 추적 중지.
 - 통계/CSV 4개: 서울 자정 분할, 조회 기간 자르기, DST 반복 시간, 수식·따옴표 처리.
@@ -15,15 +15,14 @@
 - MyBatis 매퍼 등록/SQL 매핑 구성 검사 1개.
 - 실제 Spring Security MVC 테스트 2개: 비로그인 API 401, CSRF 없는 변경 요청 403.
 - Supabase 실제 SQL 트랜잭션: 중복 활성 세션 차단, 음수 구간 차단, FK cascade 삭제. 테스트 트랜잭션은 rollback.
-- Supabase 스키마: 12개 테이블 모두 RLS 활성, anon/authenticated 스키마 접근 권한 없음, runtime 역할 usage 있음.
+- Supabase 스키마: 13개 테이블 모두 RLS 활성, anon/authenticated 스키마 접근 권한 없음, runtime 역할 usage 있음.
 - Supabase security advisor: 지적 사항 없음. performance advisor의 consent FK 인덱스 누락은 추가 인덱스로 해결.
 
 ## 미검증 / 출시 전 필요
 
-- Steam API 키가 없어 실제 OpenID 왕복과 게임 상태 응답은 검증하지 못했습니다. 서명 검증의 실제 네트워크 왕복, 공개 설정별 gameid 반환 여부는 G0 실계정 시험이 필요합니다.
-- 런타임 DB 비밀번호가 없어 app_runtime JDBC 연결·실제 애플리케이션 CRUD 왕복은 미검증입니다. SQL 제약 검증은 관리자 SQL 연결로 수행했습니다.
-- 이 환경의 원격 브라우저에서 localhost 접근이 차단되었습니다. 화면 렌더링·모바일 클릭·포커스 실측은 완료하지 못했습니다. 코드에 반응형 CSS와 대화상자 키보드 처리는 포함되어 있습니다.
-- Render NAKK에 game-chronicle 서비스를 생성했습니다. 초기 Docker 빌드는 성공했으나 DB URL 설정 오류로 서버 시작이 실패했습니다. 수정 커밋 d37ece3으로 재배포(dep-daj8r8h594qs73b8j2t0)했으며 Docker 빌드는 통과했지만 DB_URL 누락으로 update_failed 상태입니다. app_runtime도 확인 시 여전히 NOLOGIN입니다. Session pooler 호스트 확인과 런타임 접속 설정이 필요합니다.
+- Render는 DB 설정 수정 후 정상 배포되었고 app_runtime JDBC 연결을 확인했습니다. 이전 DB_URL 누락/NOLOGIN 장애는 해결됐습니다.
+- 배포 사이트의 샘플 화면과 라이브러리 레이아웃을 브라우저에서 확인했습니다. 실계정 OpenID 왕복과 공개 설정별 게임 전환 시나리오는 별도 시험 범위입니다.
+- Supabase Edge Function의 실제 Steam API 조회와 라이브러리 동기화를 확인했습니다. 예약 전환의 상세 결과는 [수집기 검증](edge-collector.md)을 참고하세요.
 - 부하 테스트, 백업/복원, 실계정 POC-01~08, 외부 Steam 장애 주입 시험은 미완료입니다.
 
 ## 구현 범위 주의

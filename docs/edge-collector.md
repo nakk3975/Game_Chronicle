@@ -1,6 +1,6 @@
 # Supabase 수집기 전환
 
-현재 단계: 함수와 예약 작업 배포 완료, Render는 전환 대응 버전 배포 예정. Steam API 키를 Supabase에 입력하고 실제 수집을 검증하기 전까지 engine=render 및 기존 수집기를 유지한다.
+현재 단계(2026-09-13): Steam API 키 검증과 예약 수집 전환 완료. engine=edge이며 Render TRACKING_ENABLED=false로 설정했다. 기존 사용자 동의와 기록을 유지한다.
 
 ## 구성
 
@@ -18,7 +18,7 @@ Edge의 기본 SUPABASE_DB_URL은 인증 시 Vault를 조회하는 데 사용한
 
 작업별 120초 임대·토큰과 사용자별 fencing을 함께 검사한다. 저장 직전 사용자 행을 잠그고 동의·활성 상태를 다시 확인한다. Render의 늦은 응답은 engine=edge일 때 저장하지 않는다. 장애 구간을 플레이시간에 더하지 않는다. Steam 호출 예산은 트랜잭션 잠금으로 예약한다.
 
-## 마지막 설정
+## 전환 절차
 
 1. Supabase Game_Chronicle → Edge Functions → Secrets에서 `STEAM_API_KEY`를 입력한다. Render의 기존 Steam 키와 같은 값이다. 저장소/채팅에 붙이지 않는다.
 2. Vault 토큰으로 `?task=health`를 호출해 HTTP 200, `steamConfigured:true`를 확인한 뒤 `?task=probe`의 HTTP 200으로 Steam 키의 실제 유효성을 검증한다.
@@ -38,4 +38,8 @@ Render `TRACKING_ENABLED=true`로 재배포한 뒤 `supabase/collector-rollback.
 - Java 테스트 33개: 기존 32개와 전환 후 Render 지연 쓰기 차단.
 - Supabase 실제 인증된 health 호출 200 및 제한된 DB 역할 접근 확인.
 - 미인증 호출 401, anon/authenticated의 제어 테이블 접근 차단.
-- 실제 Steam 호출 및 예약 실행 전환은 키 설정 이후 검증한다.
+- 실제 Steam probe HTTP 200. 수정 배포 후 14:23·14:24 UTC의 두 예약 관측에서 동의한 두 계정의 lastSuccess 갱신과 오류 없음 확인.
+- 14:23 UTC 실제 라이브러리 동기화 HTTP 200, synced=1 및 AVAILABLE 확인.
+- 실제 postgres 드라이버에서 JSON 문자열이 이중 인코딩되는 문제를 발견해 모든 JSON 파라미터를 db.json으로 수정. 영향받은 IDLE 관측 상태 두 건을 정상 객체로 복구했다. 기존 플레이 세션 JSON 두 건은 정상 객체였고 변경하지 않았다.
+- 수정 후 TypeScript 검사와 엔진 테스트 11개 통과. DB의 관측 payload가 객체이며 다음 예약 주기에도 정상 유지되는 것 확인.
+- Render 무요청 상태의 15분 이상 유휴 중단 시험은 별도 미검증이다. 웹 서버의 수집 비활성화 이후 독립 관측 갱신으로 전환을 확인한다.
