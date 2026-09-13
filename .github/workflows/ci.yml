@@ -21,6 +21,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
+      - run: node --experimental-strip-types --test supabase/functions/game-chronicle-collector/engine.test.ts
       - run: mkdir -p backend/src/main/resources/static && cp -r frontend/dist/. backend/src/main/resources/static/
       - run: gradle --no-daemon :backend:test :backend:bootJar
       - uses: actions/upload-artifact@v4

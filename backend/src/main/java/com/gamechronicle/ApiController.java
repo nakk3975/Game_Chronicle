@@ -14,12 +14,13 @@ import java.io.*;
 public class ApiController {
  private final Store db;private final TrackingService service;private final ObjectMapper json;private final SteamClient steam;private final boolean collectorEnabled;
  public ApiController(Store db,TrackingService service,ObjectMapper json,SteamClient steam,@Value("${app.tracking-enabled}")boolean enabled){this.db=db;this.service=service;this.json=json;this.steam=steam;this.collectorEnabled=enabled;}
+ private boolean collectorAvailable(){return "edge".equals(db.collectorEngine())?db.edgeCollectorHealthy():collectorEnabled&&steam.configured();}
  static UUID uid(HttpSession s){return UUID.fromString((String)s.getAttribute("userId"));}
  static void bad(boolean condition,String message){if(condition)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,message);}
  private ZoneId zone(UUID id){return ZoneId.of(db.user(id).get("timezone").toString());}
  private Instant[] range(UUID id,LocalDate from,LocalDate to){bad(!to.isAfter(from)||java.time.temporal.ChronoUnit.DAYS.between(from,to)>366,"조회 기간은 최대 366일입니다.");ZoneId z=zone(id);return new Instant[]{from.atStartOfDay(z).toInstant(),to.atStartOfDay(z).toInstant()};}
  private Map<String,Object> camel(Map<String,Object> in){Map<String,Object> out=new LinkedHashMap<>();in.forEach((k,v)->{String[] a=k.split("_");StringBuilder n=new StringBuilder(a[0]);for(int i=1;i<a.length;i++)n.append(Character.toUpperCase(a[i].charAt(0))).append(a[i].substring(1));out.put(n.toString(),v);});return out;}
- @GetMapping("/me") public Map<String,Object> me(HttpSession s){var u=camel(db.user(uid(s)));u.put("tracking",service.read(uid(s)));u.put("collectorEnabled",collectorEnabled&&steam.configured());return u;}
+ @GetMapping("/me") public Map<String,Object> me(HttpSession s){var u=camel(db.user(uid(s)));u.put("tracking",service.read(uid(s)));u.put("collectorEnabled",collectorAvailable());return u;}
  @GetMapping("/tracking/status") public TrackingEngine.State status(HttpSession s){return service.read(uid(s));}
  public record Tracking(@NotNull Boolean enabled,@NotBlank String policyVersion){}
  @PatchMapping("/me/tracking") public Map<String,Boolean> tracking(HttpSession s,@Valid @RequestBody Tracking r){bad(!r.policyVersion.equals("1.0"),"동의 내용을 다시 확인해 주세요.");service.tracking(uid(s),r.enabled);return Map.of("success",true);}
@@ -30,7 +31,7 @@ public class ApiController {
  }
  @PostMapping({"/me/steam-sync","/me/steam-diagnostics"}) public ResponseEntity<?> sync(HttpSession s){
   bad(!Boolean.TRUE.equals(db.user(uid(s)).get("tracking_enabled")),"추적 동의를 먼저 활성화해 주세요.");
-  if(!collectorEnabled||!steam.configured())throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"수집기가 아직 설정되지 않았습니다.");
+  if(!collectorAvailable())throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"수집기가 아직 설정되지 않았습니다.");
   if(db.requestSync(uid(s))==0)throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,"이미 처리 중이거나 재요청 대기시간입니다.");return ResponseEntity.accepted().body(Map.of("status","QUEUED"));
  }
  @GetMapping("/library") public List<Map<String,Object>> library(HttpSession s,@RequestParam(defaultValue="")String q,@RequestParam(defaultValue="100")int limit,@RequestParam(defaultValue="0")int offset){bad(limit<1||limit>100||offset<0||q.length()>100,"잘못된 조회 조건입니다.");return db.library(uid(s),q,limit,offset).stream().map(this::camel).toList();}

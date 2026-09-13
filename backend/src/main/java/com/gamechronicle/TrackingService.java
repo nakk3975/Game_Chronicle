@@ -19,7 +19,7 @@ public class TrackingService {
   db.stateSave(id,encode(r.state()));
  }
  @Transactional public void apply(UUID id,long token,TrackingEngine.Observation o,int delay){
-  var u=db.lockUser(id);if(u==null||!Boolean.TRUE.equals(u.get("tracking_enabled"))||!"ACTIVE".equals(u.get("status"))||db.validLease(id,token)==0)return;
+  var u=db.lockUser(id);if("edge".equals(db.collectorEngine())||u==null||!Boolean.TRUE.equals(u.get("tracking_enabled"))||!"ACTIVE".equals(u.get("status"))||db.validLease(id,token)==0)return;
   persist(id,TrackingEngine.apply(read(id),o));db.release(id,token,delay);
  }
  @Transactional public void tracking(UUID id,boolean enabled){
@@ -31,7 +31,7 @@ public class TrackingService {
   db.tracking(id,enabled);db.consent(id,enabled);
  }
  @Transactional public void library(UUID id,long expectedVersion,JsonNode response){
-  var u=db.lockUser(id);if(u==null||!Boolean.TRUE.equals(u.get("tracking_enabled"))||((Number)u.get("version")).longValue()!=expectedVersion)return;
+  var u=db.lockUser(id);if("edge".equals(db.collectorEngine())||u==null||!Boolean.TRUE.equals(u.get("tracking_enabled"))||((Number)u.get("version")).longValue()!=expectedVersion)return;
   JsonNode games=response.path("response").path("games");
   if(!games.isArray()){db.syncDone(id,"UNAVAILABLE");return;}
   for(var g:games){
@@ -46,6 +46,6 @@ public class TrackingService {
  @Transactional public void delete(UUID id){db.lockUser(id);db.deleteUser(id);}
  @Transactional public void libraryFailed(UUID id,long expectedVersion){
   var u=db.lockUser(id);
-  if(u!=null&&Boolean.TRUE.equals(u.get("tracking_enabled"))&&((Number)u.get("version")).longValue()==expectedVersion)db.syncDone(id,"FETCH_FAILED");
+  if(!"edge".equals(db.collectorEngine())&&u!=null&&Boolean.TRUE.equals(u.get("tracking_enabled"))&&((Number)u.get("version")).longValue()==expectedVersion)db.syncDone(id,"FETCH_FAILED");
  }
 }

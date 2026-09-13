@@ -4,6 +4,8 @@ import java.util.*;
 import java.time.*;
 @Mapper
 public interface Store {
+ @Select("select engine from chronicle.collector_control where id") String collectorEngine();
+ @Select("select engine='edge' and last_heartbeat>now()-interval '5 minutes' from chronicle.collector_control where id") boolean edgeCollectorHealthy();
  @Select("select * from chronicle.app_user where id=#{id}") Map<String,Object> user(UUID id);
  @Select("select * from chronicle.app_user where id=#{id} for update") Map<String,Object> lockUser(UUID id);
  @Select(affectData=true,value="insert into chronicle.app_user(steam_id) values(#{steamId}) on conflict(steam_id) do update set steam_id=excluded.steam_id returning id")

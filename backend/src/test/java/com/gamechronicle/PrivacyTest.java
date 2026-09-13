@@ -25,4 +25,12 @@ class PrivacyTest {
    assertEquals(400,e.getStatusCode().value());
   }
  }
+ @Test void renderCannotWriteAfterEdgeCutover(){
+  Store db=mock(Store.class);UUID id=UUID.randomUUID();when(db.collectorEngine()).thenReturn("edge");
+  when(db.lockUser(id)).thenReturn(Map.of("tracking_enabled",true,"status","ACTIVE","version",1L));
+  var service=new TrackingService(db,new ObjectMapper());
+  service.apply(id,1,new TrackingEngine.Observation(Instant.now(),TrackingEngine.Kind.PLAYING,"1","A"),60);
+  service.library(id,1,new ObjectMapper().createObjectNode());service.libraryFailed(id,1);
+  verify(db,never()).stateSave(any(),any());verify(db,never()).syncDone(any(),any());
+ }
 }

@@ -91,3 +91,7 @@ npm run build --prefix frontend
 - [검증 결과 및 남은 출시 조건](docs/verification.md)
 
 P1의 메모·Wrapped·공유, P2의 PC 에이전트는 포함하지 않았습니다. 초기 버전은 직접 구간 집계와 동기 삭제를 사용하며, 대규모 운영용 집계 outbox·삭제 영수증·백업 복원 삭제 목록은 후속 구현입니다.
+
+## Supabase 예약 수집기
+
+Render 유휴 중단과 게임 수집을 분리하는 Edge Function 및 Cron 구성을 추가했습니다. 키 설정과 검증이 끝날 때까지 기존 Render 수집을 유지합니다. [전환 절차와 검증 범위](docs/edge-collector.md)를 참고하세요.

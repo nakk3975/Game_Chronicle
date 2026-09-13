@@ -1,0 +1,17 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {apply,initial,seconds,classify} from './engine.ts';
+import type {Kind} from './engine.ts';
+const t=(n:number)=>new Date(Date.parse('2026-09-13T00:00:00Z')+n*1000).toISOString();
+function run(){let s=initial();return {get state(){return s},step(n:number,kind:Kind,gameId='1'){const r=apply(s,{at:t(n),kind,gameId,name:gameId});s=r.state;return r;}};}
+test('normal midpoint boundaries and two end observations',()=>{const r=run();r.step(0,'NO_GAME_CANDIDATE');r.step(60,'PLAYING');r.step(120,'PLAYING');r.step(180,'NO_GAME_CANDIDATE');const p=r.step(240,'NO_GAME_CANDIDATE').changed[0];assert.equal(p.startedAt,t(30));assert.equal(p.endedAt,t(150));assert.equal(seconds(p),120);assert.equal(r.state.active,null);});
+test('failure gaps do not count',()=>{const r=run();r.step(0,'PLAYING');r.step(60,'PLAYING');r.step(120,'FETCH_FAILED');assert.equal(r.step(180,'PLAYING').gaps.length,1);r.step(240,'PLAYING');assert.equal(seconds(r.state.active!),120);assert.equal(r.state.active!.quality,'PARTIAL');});
+test('missing then no-game does not bridge gap',()=>{const r=run();r.step(0,'PLAYING');r.step(60,'FETCH_FAILED');r.step(120,'NO_GAME_CANDIDATE');const p=r.step(180,'NO_GAME_CANDIDATE').changed[0];assert.equal(seconds(p),0);assert.equal(p.lifecycle,'INTERRUPTED');});
+test('three failures close at last seen',()=>{const r=run();r.step(0,'PLAYING');r.step(60,'FETCH_FAILED');r.step(120,'FETCH_FAILED');assert.equal(r.step(180,'FETCH_FAILED').changed[0].endedAt,t(0));assert.equal(r.state.active,null);});
+test('switch closes before new session',()=>{const r=run();r.step(0,'PLAYING');const result=r.step(60,'PLAYING','2');assert.equal(result.changed.length,2);assert.equal(result.changed[0].lifecycle,'FINALIZED');assert.equal(result.changed[0].endedAt,r.state.active!.startedAt);});
+test('restart does not invent time',()=>{const r=run();r.step(0,'PLAYING');const result=r.step(600,'PLAYING');assert.equal(result.changed.length,2);assert.equal(seconds(result.changed[0]),0);assert.equal(r.state.active!.startedAt,t(600));assert.equal(result.gaps.length,1);});
+test('old observations cannot replace current game',()=>{const r=run();r.step(100,'PLAYING');assert.equal(r.step(90,'PLAYING','2').changed.length,0);assert.equal(r.state.active!.gameId,'1');});
+test('end candidate revert creates a gap',()=>{const r=run();r.step(0,'PLAYING');r.step(60,'NO_GAME_CANDIDATE');assert.equal(r.step(120,'PLAYING').gaps.length,1);assert.equal(seconds(r.state.active!),0);});
+test('Java JSON with omitted defaults resumes',()=>{const r=apply({status:'IDLE'},{at:t(0),kind:'PLAYING',gameId:'1',name:'test'});const restored=apply(JSON.parse(JSON.stringify(r.state)),{at:t(60),kind:'PLAYING',gameId:'1',name:'test'});assert.equal(seconds(restored.state.active!),60);});
+test('classify requires observable public player and valid app id',()=>{assert.equal(classify(null,t(0)).kind,'UNOBSERVABLE');assert.equal(classify({communityvisibilitystate:1,gameid:'1'},t(0)).kind,'UNOBSERVABLE');assert.equal(classify({communityvisibilitystate:3,gameid:'4294967296'},t(0)).kind,'UNOBSERVABLE');assert.equal(classify({communityvisibilitystate:3,gameid:'570'},t(0)).kind,'PLAYING');assert.equal(classify({communityvisibilitystate:3},t(0)).kind,'NO_GAME_CANDIDATE');});
+test('input state is not mutated',()=>{const s=initial();apply(s,{at:t(0),kind:'PLAYING',gameId:'1',name:'one'});assert.equal(s.active,null);});

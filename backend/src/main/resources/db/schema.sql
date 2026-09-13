@@ -70,6 +70,20 @@ create table chronicle.spring_session_attributes (
  attribute_name varchar(200) not null,attribute_bytes bytea not null,
  primary key(session_primary_id,attribute_name)
 );
+create table chronicle.collector_control (
+ id boolean primary key default true check(id),
+ engine text not null default 'render' check(engine in ('render','edge')),
+ last_heartbeat timestamptz,
+ last_sync_heartbeat timestamptz,
+ last_error text,
+ poll_lease_until timestamptz,
+ sync_lease_until timestamptz,
+ poll_token bigint not null default 0,
+ sync_token bigint not null default 0,
+ next_attempt_at timestamptz not null default now(),
+ failures integer not null default 0
+);
+insert into chronicle.collector_control(id) values(true);
 grant usage on schema chronicle to app_runtime;
 grant select,insert,update,delete on all tables in schema chronicle to app_runtime;
 do $$ declare t record; begin

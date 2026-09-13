@@ -12,7 +12,7 @@ public class Collector {
  private Instant next=Instant.EPOCH;private int failures=0;
  public Collector(Store db,SteamClient steam,TrackingService service,@Value("${app.tracking-enabled}")boolean enabled){this.db=db;this.steam=steam;this.service=service;this.enabled=enabled;}
  @Scheduled(fixedDelay=10000) public void poll(){
-  if(!enabled||!steam.configured()||Instant.now().isBefore(next))return;
+  if(!enabled||!steam.configured()||Instant.now().isBefore(next)||"edge".equals(db.collectorEngine()))return;
   var jobs=db.claim();if(jobs.isEmpty())return;Instant at=Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
   Map<String,com.fasterxml.jackson.databind.JsonNode> players=new HashMap<>();boolean failed=false;int delay=60;
   try {
@@ -32,7 +32,7 @@ public class Collector {
   }catch(Exception e){log.warn("Collection write failed; lease will expire");}
  }
  @Scheduled(fixedDelay=60000) public void sync(){
-  if(!enabled||!steam.configured()||Instant.now().isBefore(next))return;
+  if(!enabled||!steam.configured()||Instant.now().isBefore(next)||"edge".equals(db.collectorEngine()))return;
   for(var u:db.syncDue())try{
    service.library((UUID)u.get("id"),((Number)u.get("version")).longValue(),steam.get("IPlayerService/GetOwnedGames/v1/","steamid="+u.get("steam_id")+"&include_appinfo=true&include_played_free_games=true"));
   }catch(Exception e){service.libraryFailed((UUID)u.get("id"),((Number)u.get("version")).longValue());log.warn("Steam library synchronization unavailable");}
