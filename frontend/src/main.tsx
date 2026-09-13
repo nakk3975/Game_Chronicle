@@ -162,6 +162,27 @@ function makeDemo(): Session[] {
     };
   });
 }
+function GameCover({ gameId, className = "" }: { gameId: string; className?: string }) {
+  const [attempt, setAttempt] = useState(0);
+  const files = ["header.jpg", "capsule_616x353.jpg"];
+  return (
+    <span className={`game-cover ${className}`}>
+      {attempt < files.length ? (
+        <img
+          src={`https://cdn.akamai.steamstatic.com/steam/apps/${gameId}/${files[attempt]}`}
+          alt=""
+          loading="lazy"
+          onError={() => setAttempt((value) => value + 1)}
+        />
+      ) : (
+        <span className="game-cover-placeholder" role="img" aria-label="게임 이미지 없음">
+          <Gamepad2 size={36} strokeWidth={1.5} />
+          <span>이미지 준비 중</span>
+        </span>
+      )}
+    </span>
+  );
+}
 function App() {
   const [route, setRoute] = useState(
     paths.includes(location.pathname) ? location.pathname : "/dashboard",
@@ -886,7 +907,7 @@ function App() {
                     key={g.gameId}
                     onClick={() => setSelectedGame(g)}
                   >
-                    <img src={picture(g.gameId)} alt="" />
+                    <GameCover key={g.gameId} gameId={g.gameId} />
                     <div>
                       <h3>{g.name}</h3>
                       <div>
@@ -912,8 +933,10 @@ function App() {
               )}
               {libraryMore && (
                 <button
-                  className="secondary"
+                  className="secondary library-load-more"
+                  disabled={busy}
                   onClick={async () => {
+                    setBusy(true);
                     try {
                       const more = await api<Game[]>(
                         "/library?offset=" + games.length,
@@ -922,10 +945,12 @@ function App() {
                       setLibraryMore(more.length === 100);
                     } catch (e) {
                       setError((e as Error).message);
+                    } finally {
+                      setBusy(false);
                     }
                   }}
                 >
-                  게임 더 보기
+                  {busy ? "게임 불러오는 중…" : "게임 더 보기"}
                 </button>
               )}
             </>
@@ -1258,11 +1283,7 @@ function App() {
             ) : (
               selectedGame && (
                 <>
-                  <img
-                    className="detail-cover"
-                    src={picture(selectedGame.gameId)}
-                    alt=""
-                  />
+                  <GameCover key={selectedGame.gameId} gameId={selectedGame.gameId} className="detail-cover" />
                   <h2>{selectedGame.name}</h2>
                   <p>
                     Steam 누적: {duration(selectedGame.reportedMinutes * 60)}

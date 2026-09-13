@@ -620,7 +620,9 @@ header > span {
   text-align: left;
   padding: 0;
 }
-.game-card > img {
+.game-cover {
+  display: block;
+  overflow: hidden;
   width: 100%;
   aspect-ratio: 460/215;
   object-fit: cover;
@@ -1176,4 +1178,31 @@ footer span:last-child {
   .intro-footer span:last-child {
     font-size: 9px;
   }
+}
+
+.game-cover > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 460 / 215;
+  object-fit: cover;
+}
+.game-cover-placeholder {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 460 / 215;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--hover), var(--panel));
+  color: var(--muted);
+  font-size: 12px;
+}
+.library-load-more {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 28px;
 }
