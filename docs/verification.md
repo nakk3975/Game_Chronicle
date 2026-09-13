@@ -23,7 +23,7 @@
 - Steam API 키가 없어 실제 OpenID 왕복과 게임 상태 응답은 검증하지 못했습니다. 서명 검증의 실제 네트워크 왕복, 공개 설정별 gameid 반환 여부는 G0 실계정 시험이 필요합니다.
 - 런타임 DB 비밀번호가 없어 app_runtime JDBC 연결·실제 애플리케이션 CRUD 왕복은 미검증입니다. SQL 제약 검증은 관리자 SQL 연결로 수행했습니다.
 - 이 환경의 원격 브라우저에서 localhost 접근이 차단되었습니다. 화면 렌더링·모바일 클릭·포커스 실측은 완료하지 못했습니다. 코드에 반응형 CSS와 대화상자 키보드 처리는 포함되어 있습니다.
-- Render NAKK에 game-chronicle 서비스를 생성했습니다. 초기 Docker 빌드는 성공했으나 DB URL 설정 오류로 서버 시작이 실패했습니다. 코드 수정 및 재배포 검증 중이며 정상 가동을 뜻하지 않습니다. app_runtime은 2026-09-13 확인 시 여전히 NOLOGIN입니다.
+- Render NAKK에 game-chronicle 서비스를 생성했습니다. 초기 Docker 빌드는 성공했으나 DB URL 설정 오류로 서버 시작이 실패했습니다. 수정 커밋 d37ece3으로 재배포(dep-daj8r8h594qs73b8j2t0)했으며 Docker 빌드는 통과했지만 DB_URL 누락으로 update_failed 상태입니다. app_runtime도 확인 시 여전히 NOLOGIN입니다. Session pooler 호스트 확인과 런타임 접속 설정이 필요합니다.
 - 부하 테스트, 백업/복원, 실계정 POC-01~08, 외부 Steam 장애 주입 시험은 미완료입니다.
 
 ## 구현 범위 주의
