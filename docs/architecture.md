@@ -2,11 +2,12 @@
 
 React + TypeScript → 동일 출처 Spring Boot API → MyBatis → Supabase PostgreSQL `chronicle` 스키마.
 Steam OpenID는 별도 검증 어댑터를 사용하며 Supabase Auth에 의존하지 않는다.
+Supabase Cron이 매분 Edge Function을 호출해 Steam을 조회하고 같은 DB에 관측을 저장한다. collector_control의 engine과 heartbeat로 수집 소유권·상태를 공유한다.
 웹 로그인 세션은 Spring Session JDBC, 플레이 기록은 play_session, 수집 동의는 app_user와 consent_event로 분리한다.
 
 ## 데이터와 권한
 - JDBC 서버 전용 app_runtime 역할. 비밀번호 없는 NOLOGIN 상태로 생성하며 배포 때 관리자가 LOGIN 비밀번호를 설정한다.
-- 12개 테이블에 RLS, backend_only 정책. anon/authenticated/PUBLIC에는 스키마·테이블 접근 권한 없음.
+- 13개 테이블에 RLS, backend_only 정책. anon/authenticated/PUBLIC에는 스키마·테이블 접근 권한 없음.
 - 모든 개인 조회에 인증 세션 user_id 조건. API의 userId 입력으로 소유권을 선택할 수 없음.
 - 수집기는 DB 임대 + fencing_token을 검사하고 짧은 트랜잭션 내 사용자 동의를 재확인한다.
 - 부분 유일 인덱스로 사용자당 활성 세션 1개, 구간 음수 금지, FK cascade 삭제를 보장한다.
@@ -33,7 +34,7 @@ Steam OpenID는 별도 검증 어댑터를 사용하며 Supabase Auth에 의존�
 ## 출시 전 실계정 검증
 G0는 서버 API 키·실제 Steam 계정 없이 완료 처리하지 않는다. 기획서 POC-01~08의 공개/비공개/오프라인/게임전환 실험을 해야 한다.
 현재 gameid 부재는 종료 후보일 뿐 실제 종료의 증거가 아니다. 공개 프로필 여부만으로 게임 정보 공개 여부를 확정하지 않는다.
-Render Free는 상시 기록 운영 환경이 아니다. 유료 상시 실행 인스턴스 선택 후 TRACKING_ENABLED=true 설정이 필요하다.
+운영 수집은 Supabase Cron·Edge Function에서 실행한다. Render는 TRACKING_ENABLED=false이며 웹 로그인·조회만 담당한다. Render 재배포 후 독립 관측은 확인했고, 실제 장시간 유휴 중단 시험은 별도 남아 있다. 자세한 전환·롤백 절차는 [수집기 문서](edge-collector.md)를 참고한다.
 
 ## 근거 문서
 - https://partner.steamgames.com/doc/features/auth
