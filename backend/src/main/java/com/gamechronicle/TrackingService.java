@@ -35,7 +35,7 @@ public class TrackingService {
   JsonNode games=response.path("response").path("games");
   if(!games.isArray()){db.syncDone(id,"UNAVAILABLE");return;}
   for(var g:games){
-   if(!g.path("appid").canConvertToLong()||!g.path("playtime_forever").canConvertToLong())continue;
+   if(!g.path("appid").isIntegralNumber()||!g.path("playtime_forever").isIntegralNumber()||!g.path("appid").canConvertToLong()||!g.path("playtime_forever").canConvertToLong())continue;
    long app=g.path("appid").asLong(),min=g.path("playtime_forever").asLong();if(app<=0||app>4294967295L||min<0)continue;
    String game=Long.toString(app);Long previous=db.minutes(id,game);
    db.game(id,game,g.path("name").asText("Steam 게임 "+game),min);
@@ -44,4 +44,8 @@ public class TrackingService {
   db.syncDone(id,"AVAILABLE");
  }
  @Transactional public void delete(UUID id){db.lockUser(id);db.deleteUser(id);}
+ @Transactional public void libraryFailed(UUID id,long expectedVersion){
+  var u=db.lockUser(id);
+  if(u!=null&&Boolean.TRUE.equals(u.get("tracking_enabled"))&&((Number)u.get("version")).longValue()==expectedVersion)db.syncDone(id,"FETCH_FAILED");
+ }
 }

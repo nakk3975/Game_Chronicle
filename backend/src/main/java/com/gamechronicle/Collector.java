@@ -35,7 +35,7 @@ public class Collector {
   if(!enabled||!steam.configured()||Instant.now().isBefore(next))return;
   for(var u:db.syncDue())try{
    service.library((UUID)u.get("id"),((Number)u.get("version")).longValue(),steam.get("IPlayerService/GetOwnedGames/v1/","steamid="+u.get("steam_id")+"&include_appinfo=true&include_played_free_games=true"));
-  }catch(Exception e){db.syncDone((UUID)u.get("id"),"FETCH_FAILED");log.warn("Steam library synchronization unavailable");}
+  }catch(Exception e){service.libraryFailed((UUID)u.get("id"),((Number)u.get("version")).longValue());log.warn("Steam library synchronization unavailable");}
  }
  @Scheduled(fixedDelay=3600000) public void clean(){db.cleanNonces();db.cleanBudget();}
 }

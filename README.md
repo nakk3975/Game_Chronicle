@@ -23,6 +23,7 @@ Java 17 · Spring Boot 3.5 · Gradle 8.14 · MyBatis · React 19 + TypeScript ·
 - GitHub: [nakk3975/Game_Chronicle](https://github.com/nakk3975/Game_Chronicle)
 - Supabase: `Game_Chronicle` / `mpfvubjdrerkqvgevgrw` / 서울 리전
 - DB: `chronicle` 비공개 스키마, 초기 테이블 12개 생성 완료. 기존 프로젝트에 schema.sql을 다시 실행하지 마세요.
+- Render: [game-chronicle](https://game-chronicle.onrender.com) / NAKK / Singapore / free / 자동 배포 OFF
 - 서버 비밀정보는 저장소에 포함하지 않습니다. Steam 실계정 자동 수집·공개 배포는 아직 검증 전입니다.
 
 ## 새 PC에서 실행
@@ -71,7 +72,7 @@ ALTER ROLE app_runtime LOGIN PASSWORD '<새 런타임 전용 비밀번호>';
 저장소의 `Dockerfile`은 React 빌드를 Spring Boot에 포함하여 동일 출처로 제공합니다. `render.yaml`은 **무료 웹 확인용, 수집 OFF**로 준비되어 있으며 자동 배포도 OFF입니다.
 
 1. Render에서 GitHub 저장소를 연결하고 Blueprint 또는 Docker Web Service를 생성합니다.
-2. DB_URL, DB_USERNAME, DB_PASSWORD, STEAM_API_KEY를 비밀 환경변수에 입력합니다.
+2. 서비스의 **Environment → Add Environment Variable**에서 DB_URL, DB_USERNAME, DB_PASSWORD, STEAM_API_KEY를 입력하고 **Save, rebuild, and deploy**합니다. DB_URL은 `jdbc:postgresql://HOST:5432/postgres?sslmode=require` 형식을 권장합니다. Supabase의 `postgresql://USER:PASSWORD@HOST:5432/postgres` URI도 지원하며, 별도 DB_USERNAME/DB_PASSWORD 값이 있으면 그 값을 우선합니다. URI의 특수문자는 URL 인코딩해야 합니다. Supabase 프로젝트 API URL(`https://...supabase.co`)은 DB_URL이 아닙니다.
 3. APP_BASE_URL을 실제 `https://...onrender.com` 주소로 설정합니다. COOKIE_SECURE=true를 유지합니다.
 4. `/actuator/health/readiness`가 정상인지 확인합니다.
 5. 24시간 자동 기록이 필요하면 상시 실행 인스턴스를 선택한 다음 TRACKING_ENABLED=true로 바꿉니다. 무료 유휴중단을 인위적 호출로 우회하지 않습니다.

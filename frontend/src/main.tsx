@@ -283,11 +283,11 @@ function App() {
   }, [from, to, demo]);
   useEffect(() => {
     const t = setInterval(() => {
-      if (!document.hidden && !busy && !selected && route !== "/settings")
+      if (!document.hidden && !busy && !selected && !selectedGame && route !== "/settings")
         void reload();
     }, 60000);
     return () => clearInterval(t);
-  }, [demo, from, to, busy, selected, route]);
+  }, [demo, from, to, busy, selected, selectedGame, route]);
   useEffect(() => {
     if (!demo) return;
     const d = sessions.filter((s) => !s.excluded);
@@ -388,9 +388,11 @@ function App() {
   const validActive =
     me?.tracking.active && state === "게임 관측 중" ? me.tracking.active : null;
   const totalGames = Object.keys(summary.games).length;
-  const dates = Array.from({ length: 365 }, (_, i) => {
-    const d = new Date(new Date().getFullYear(), 0, 1 + i, 12);
-    return d.toLocaleDateString("sv-SE");
+  const heatYear = Number(today().slice(0, 4));
+  const yearDays = (Date.UTC(heatYear + 1, 0, 1) - Date.UTC(heatYear, 0, 1)) / 86400000;
+  const dates = Array.from({ length: yearDays }, (_, i) => {
+    const d = new Date(Date.UTC(heatYear, 0, 1 + i, 12));
+    return d.toISOString().slice(0, 10);
   });
   function tile(s: Session) {
     return (
@@ -855,7 +857,7 @@ function App() {
                 <label className="search">
                   <Search size={18} />
                   <input
-                    placeholder="게임 이름으로 검색"
+                    placeholder="불러온 게임에서 검색"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                   />

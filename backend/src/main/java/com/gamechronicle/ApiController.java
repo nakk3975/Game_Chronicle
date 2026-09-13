@@ -37,7 +37,11 @@ public class ApiController {
  TrackingEngine.Play decode(Map<String,Object> row){try{var p=json.readValue(row.get("payload").toString(),TrackingEngine.Play.class);p.excluded=Boolean.TRUE.equals(row.get("excluded"));p.version=((Number)row.get("version")).longValue();return p;}catch(Exception e){throw new IllegalStateException(e);}}
  @GetMapping("/sessions") public Map<String,Object> sessions(HttpSession s,@RequestParam LocalDate from,@RequestParam LocalDate to,@RequestParam(required=false)String cursor,@RequestParam(defaultValue="50")int limit){
   bad(limit<1||limit>100,"잘못된 조회 건수입니다.");var r=range(uid(s),from,to);Instant before=null;UUID beforeId=null;
-  if(cursor!=null){String[] c=new String(Base64.getUrlDecoder().decode(cursor),java.nio.charset.StandardCharsets.UTF_8).split("\\|",2);before=Instant.parse(c[0]);beforeId=UUID.fromString(c[1]);}
+  if(cursor!=null){
+   bad(cursor.length()>200,"잘못된 페이지 커서입니다.");
+   try {String[] c=new String(Base64.getUrlDecoder().decode(cursor),java.nio.charset.StandardCharsets.UTF_8).split("\\|",-1);if(c.length!=2)throw new IllegalArgumentException();before=Instant.parse(c[0]);beforeId=UUID.fromString(c[1]);}
+   catch(IllegalArgumentException|DateTimeException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"잘못된 페이지 커서입니다.");}
+  }
   var rows=db.sessions(uid(s),r[0],r[1],before,beforeId,limit+1);boolean more=rows.size()>limit;
   var data=rows.stream().limit(limit).map(this::decode).toList();String next="";
   if(more){var p=data.get(data.size()-1);next=Base64.getUrlEncoder().withoutPadding().encodeToString((p.startedAt+"|"+p.id).getBytes(java.nio.charset.StandardCharsets.UTF_8));}
