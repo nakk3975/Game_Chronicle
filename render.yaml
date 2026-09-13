@@ -1,0 +1,26 @@
+# Free web preview. Enable tracking only in an always-on environment.
+services:
+  - type: web
+    name: game-chronicle
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health/readiness
+    autoDeployTrigger: off
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: STEAM_API_KEY
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRACKING_ENABLED
+        value: "false"
