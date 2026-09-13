@@ -72,6 +72,7 @@ const paths = [
   "/analytics",
   "/settings",
 ];
+const LIBRARY_PAGE_SIZE = 96;
 const labels = ["대시보드", "타임라인", "라이브러리", "통계", "설정"];
 const icons = [LayoutDashboard, Clock3, Library, ChartNoAxesCombined, Settings];
 const duration = (s: number) =>
@@ -281,7 +282,7 @@ function App() {
         api<{ data: Session[]; nextCursor: string; gaps: typeof gaps }>(
           "/sessions?" + query,
         ),
-        api<Game[]>("/library"),
+        api<Game[]>(`/library?limit=${LIBRARY_PAGE_SIZE}`),
         api<Summary>("/analytics/summary?" + query),
         api<Summary>("/analytics/heatmap?year=" + new Date().getFullYear()),
       ]);
@@ -289,7 +290,7 @@ function App() {
       setCursor(s.nextCursor);
       setGaps(s.gaps);
       setGames(g);
-      setLibraryMore(g.length === 100);
+      setLibraryMore(g.length === LIBRARY_PAGE_SIZE);
       setSummary(a);
       setHeat(h);
     } catch (e) {
@@ -939,10 +940,10 @@ function App() {
                     setBusy(true);
                     try {
                       const more = await api<Game[]>(
-                        "/library?offset=" + games.length,
+                        `/library?limit=${LIBRARY_PAGE_SIZE}&offset=${games.length}`,
                       );
                       setGames((v) => [...v, ...more]);
-                      setLibraryMore(more.length === 100);
+                      setLibraryMore(more.length === LIBRARY_PAGE_SIZE);
                     } catch (e) {
                       setError((e as Error).message);
                     } finally {
